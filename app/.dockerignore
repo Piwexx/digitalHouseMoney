@@ -1,0 +1,31 @@
+# Ignorar dependencias locales
+node_modules
+npm-debug.log
+yarn-error.log
+.pnpm-debug.log
+
+# Archivos temporales y logs
+*.log
+.next
+out
+.cache
+dist
+*.local
+
+# Entornos y configuración local
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+.DS_Store
+
+# Docker y sistema
+.dockerignore
+docker-compose.yml
+Dockerfile
+
+# Otros
+coverage
+.vscode
+.idea

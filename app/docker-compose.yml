@@ -1,0 +1,30 @@
+
+services:
+  redis:
+    image: redis:latest
+    container_name: redis-server
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: ["redis-server", "--requirepass", "money", "--appendonly", "yes"]
+
+  # nextjs:
+  #   build: .
+  #   container_name: next-app
+  #   ports:
+  #     - "3000:3000"
+  #   volumes:
+  #     - .:/app
+  #     - /app/node_modules
+  #   environment:
+  #     REDIS_HOST: redis
+  #     REDIS_PORT: 6379
+  #     REDIS_PASSWORD: money
+  #   depends_on:
+  #     - redis
+  #   command: npm run dev
+
+volumes:
+  redis-data:

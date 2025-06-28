@@ -1,0 +1,37 @@
+import { LINK_BUTTON_ACTIONS, LINK_BUTTON_ACTIVITY } from "@/constants/constants";
+import { parseDate } from "@/utils/parseDate";
+import { CircleCheck } from "lucide-react";
+import Link from "next/link";
+
+interface props {
+  date:Date
+  amount: number
+  cvu:string
+}
+
+export default function SuccessStep({ amount, date, cvu }: props) {
+  return (
+    <>
+      <div className=" flex flex-col gap-2 p-4 justify-center items-center bg-primary-color text-black p-4 rounded-xl text-center font-bold">
+        <CircleCheck className="w-16 h-16 font-bold mt-2"/>
+        <p className="text-black text-2xl"> Ya cargamos el dinero en tu cuenta</p>
+      </div>
+      <div className="flex flex-col bg-secondary-color mt-4 rounded-xl p-8">
+        <p className="text-white text-bases">{parseDate(date)}</p>
+        <p className="text-primary-color text-xl font-semibold">${amount}</p>
+      <div className="mt-4 flex flex-col gap-2">
+        <p className="text-sm text-gray-300">Para</p>
+        <p className="text-xl text-primary-color font-bold">Cuenta propia</p>
+      </div>
+      <div className="flex flex-col mt-4">
+        <p className="text-base text-gray-300">Brubank</p>
+        <p className="text-sm text-gray-300">CVU {cvu}</p>
+      </div>
+      </div>
+      <div className="mt-4 flex flex-col gap-2 justify-between items-center sm:flex-row md:justify-end ">
+        <Link href={LINK_BUTTON_ACTIONS.Inicio.href} className="bg-gray-300 text-black text-base p-4 rounded-lg font-semi w-full sm:w-[250px] text-center">{LINK_BUTTON_ACTIONS.Inicio.label}</Link>
+        <Link href={""} className="bg-primary-color p-4 rounded-lg text-black text-base font-semibold w-full sm:w-[250px] text-center">Descargar comprobante</Link>
+      </div>
+    </>
+  );
+}

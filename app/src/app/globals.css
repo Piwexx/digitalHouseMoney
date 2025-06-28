@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --color-primary: #c1fd35;
+  --color-secondary:#201F22;
+  --color-btn : #3A393E
+
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-open-sans);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-open-sans);
+}
+
+/*Footer*/
+.bg-footer-color{
+  background-color: #3A393E;
+}
+
+/*Primary*/
+.bg-primary-color{
+  background-color: var(--color-primary);
+}
+
+.text-primary-color{
+  color:var(--color-primary);
+}
+
+.border-primary-color{
+  border-color: var(--color-primary);
+}
+
+
+/*Secondary*/
+.bg-secondary-color{
+   background-color: var(--color-secondary);
+}
+
+.text-secondary-color{
+  color: var(--color-secondary);
+}
+
+.btn-secondary{
+  background-color: var(--color-btn)
+}
+.btn-secondary:hover{
+  background-color: var(--color-secondary)
+}
+
+.btn-primary {
+  background-color: var(--color-primary);
+}
+
+.btn-primary:hover {
+  background-color: #bff16f; /* o cualquier color de hover deseado */
+}
+
+.input-border{
+  border-color: #D2FFEC;
+}
