@@ -1,4 +1,4 @@
-import { LINK_BUTTON_ACTIONS, LINK_BUTTON_ACTIVITY } from "@/constants/constants";
+import { LINK_BUTTON_ACTIONS } from "@/constants/constants";
 import { parseDate } from "@/utils/parseDate";
 import { CircleCheck } from "lucide-react";
 import Link from "next/link";

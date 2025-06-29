@@ -10,7 +10,7 @@ export default async function page() {
   
   return (
     <>
-    <TransferWizard cards={cards} cvu={account.cvu} accountId={account.id} token={token}/>
+      <TransferWizard cards={cards} cvu={account.cvu} accountId={account.id} token={token}/>
     </>
   )
 }
