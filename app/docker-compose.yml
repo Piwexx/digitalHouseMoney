@@ -16,15 +16,17 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - .:/app
-      - /app/node_modules
+      - .:/app:cached
+      - /app/node_modules  
     environment:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: money
+      REDIS_URL: redis://:money@redis:6379
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
     depends_on:
       - redis
-    command: npm run dev
+    command: pnpm run dev
 
 volumes:
   redis-data:
