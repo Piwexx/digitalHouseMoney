@@ -1,195 +1,174 @@
 'use client';
-import { schemaCard } from "@/schemas/card";
-import { postCards } from "@/services/card"
-import { FormEvent, useState } from 'react';
+import { useState } from 'react';
+import { useForm, SubmitHandler, FieldName } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
 import Cards from 'react-credit-cards-2';
 import 'react-credit-cards-2/dist/es/styles-compiled.css';
-import { ToastContainer, toast } from 'react-toastify';
-import {useRouter} from "next/navigation";
+import { toast } from 'react-toastify'; // ToastContainer should be global
+import { useRouter } from "next/navigation";
+import { schemaCard } from "@/schemas/card";
+import { postCards } from "@/services/card";
 import { convertDateFormat } from "@/utils/converDataFormat";
-import { ValidationError } from "yup";
 import clsx from "clsx";
 
-interface props {
-  accountId:number
-  token:string
+interface Props {
+  accountId: number;
+  token: string;
 }
 
-type Payload = {
-  cod: number;
-  expiration_date: string;
-  first_last_name: string;
-  number_id: number;
-};
+// Type for form data, inferred from the schema
+type CardFormInputs = yup.InferType<typeof schemaCard>;
+type FocusedField = FieldName<CardFormInputs> | undefined;
 
-type FocusedField = 'number' | 'name' | 'expiry' | 'cvc' | undefined;
-
-
-export default function CreditCardForm({accountId, token}: props) {
-  const [errors, setErrors] = useState<Partial<Record<keyof Payload, string>>>({});
+export default function CreditCardForm({ accountId, token }: Props) {
+  const [focused, setFocused] = useState<FocusedField>(undefined);
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const router = useRouter();
-  const [cardData, setCardData] = useState<{
-    number_id: string;
-    first_last_name: string;
-    expiration_date: string;
-    cod: string;
-    focus: FocusedField;
-  }>({
-    number_id: '',
-    first_last_name: '',
-    expiration_date: '',
-    cod: '',
-    focus: undefined,
+
+  const {
+    register,
+    handleSubmit: hookFormSubmit,
+    formState: { errors, isValid }, // Use isValid for button disable state
+    watch,
+    setFocus, // RHF's setFocus can be used
+  } = useForm<CardFormInputs>({
+    resolver: yupResolver(schemaCard),
+    mode: 'onChange', // Validate on change for better UX
+    defaultValues: { // Provide defaultValues for controlled components
+      number_id: '',
+      first_last_name: '',
+      expiration_date: '',
+      cod: '',
+    }
   });
 
-  const topRight = () => {
-    toast.success('Hey 👋!, Tarjeta agregada correctamente', {
-      position: 'top-right',
-    });
-  };
-  
-  const topRightError = () => {
-        toast.error('Hey 👋!, no se pudo agregar la tarjeta', {
-          position: 'top-right',
-        });
+  // Watch form values for the Cards component
+  const watchedValues = watch();
+
+  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    const fieldName = e.target.name as FieldName<CardFormInputs>;
+    setFocused(fieldName);
+    // RHF's setFocus can be used to programmatically focus fields if needed,
+    // but here we're setting the 'focused' prop for the Cards component.
   };
 
-  const getFormattedExpiry = () => {
-    const parts = cardData.expiration_date.split('/');
-    return parts.length === 2 ? `${parts[0]}${parts[1].slice(-2)}` : '';
-  };
+  const onSubmit: SubmitHandler<CardFormInputs> = async (data) => {
+    setIsLoading(true);
+    setServerError(null);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setCardData({ ...cardData, [name]: value });
-  };
-
-  const handleInputFocus = (e) => {
-    setCardData({ ...cardData, focus: e.target.name });
-    setErrors({});
-  };
-
-  const isFormComplete = () => {
-    return (
-      cardData.number_id.trim() !== '' &&
-      cardData.expiration_date.trim() !== '' &&
-      cardData.first_last_name.trim() !== '' &&
-      cardData.cod.trim() !== ''
-    );
-  };
-
-  const handleSubmit = async(e:FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+    const payload = {
+      cod: Number(data.cod),
+      expiration_date: convertDateFormat(data.expiration_date), // MM/YY -> YYYY-MM-DD
+      first_last_name: data.first_last_name,
+      number_id: Number(data.number_id.replace(/\s/g, '')), // Remove spaces for API
+    };
 
     try {
-      await schemaCard.validate(cardData,{ abortEarly:false })
-      
-      const payload = {
-        cod: Number(cardData.cod),
-        expiration_date: convertDateFormat(cardData.expiration_date),
-        first_last_name: cardData.first_last_name,
-        number_id: Number(cardData.number_id),
-      };
-      
-      await postCards(accountId,payload,token)
-      
-      topRight()
+      await postCards(accountId, payload, token);
+      toast.success('Tarjeta agregada correctamente', { position: 'top-right' });
       router.push("/dashboard/cards");
-
-    } catch (err) {
-      if (err instanceof ValidationError) {
-          const validationErrors: Partial<Record<keyof Payload, string>> = {};
-          err.inner.forEach((err) => {
-             if (err.path) validationErrors[err.path as keyof Payload] = err.message;
-          });
-          setErrors(validationErrors);
-          return;
-      }
-      topRightError();
+    } catch (err: any) {
+      console.error("Card submission error:", err);
+      setServerError(err.message || 'No se pudo agregar la tarjeta. Intenta de nuevo.');
+      toast.error('No se pudo agregar la tarjeta. Intenta de nuevo.', { position: 'top-right' });
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  const inputBaseClass = "rounded-lg p-4 w-full text-black text-base border-2 input-border";
+  const errorTextClass = "text-red-600 text-sm ml-2 mt-1";
+
 
   return (
     <div className="min-h-[80%] flex flex-col items-center justify-center m-10">
       <div className="flex flex-col items-center justify-center gap-10 bg-white rounded-xl shadow-md p-6 w-full">
         <div className="w-full">
           <Cards
-            number={cardData.number_id}
-            name={cardData.first_last_name}
-            expiry={getFormattedExpiry()}
-            cvc={cardData.cod}
-            focused={cardData.focus}
+            number={watchedValues.number_id || ''}
+            name={watchedValues.first_last_name || ''}
+            expiry={watchedValues.expiration_date || ''} // react-credit-cards-2 expects MM/YY or MMYY
+            cvc={watchedValues.cod || ''}
+            focused={focused}
           />
         </div>
 
         <form
-          onSubmit={handleSubmit}
-          className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6 w-full"
+          onSubmit={hookFormSubmit(onSubmit)}
+          noValidate
+          className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mt-6 w-full"
         >
-          <input
-            type="tel"
-            name="number_id"
-            placeholder="Número de la tarjeta*"
-            value={cardData.number_id}
-            onChange={handleInputChange}
-            onFocus={handleInputFocus}
-            className="rounded-lg p-4 w-full text-black text-base border-2 input-border"
-          />
-          {errors.number_id && (
-            <span className="text-red-600 text-sm ml-2">{errors.number_id}</span>
-          )}
-          <input
-            type="text"
-            name="expiration_date"
-            placeholder="Fecha de vencimiento (MM/YYYY)*"
-            value={cardData.expiration_date}
-            onChange={handleInputChange}
-            onFocus={handleInputFocus}
-            className="rounded-lg p-4 w-full text-black text-base border-2 input-border"
-          />
-          {errors.expiration_date && (
-            <span className="text-red-600 text-sm ml-2">{errors.expiration_date}</span>
-          )}
-          <input
-            type="text"
-            name="first_last_name"
-            placeholder="Nombre y apellido*"
-            value={cardData.first_last_name}
-            onChange={handleInputChange}
-            onFocus={handleInputFocus}
-            className="rounded-lg p-4 w-full text-black text-base border-2 input-border"
-          />
-          {errors.first_last_name && (
-            <span className="text-red-600 text-sm ml-2">{errors.first_last_name}</span>
-          )}
-          <input
-            type="tel"
-            name="cod"
-            placeholder="Código de seguridad*"
-            value={cardData.cod}
-            onChange={handleInputChange}
-            onFocus={handleInputFocus}
-            className="rounded-lg p-4 w-full text-black text-base border-2 input-border"
-          />
-          {errors.cod && (
-            <span className="text-red-600 text-sm ml-2">{errors.cod}</span>
-          )}
-          <button
-            disabled={!isFormComplete()}
-            type="submit"
-            className={clsx(
-              "mt-4 md:col-span-1 md:col-start-2 bg-gray-300 hover:bg-gray-400 text-black text-base font-bold p-4 rounded-lg  min-h[50px]",
-              {
-                 "bg-gray-300 hover:bg-gray-400 text-black cursor-pointe cursor-not-allowed": !isFormComplete(),
-                 "bg-primary-color text-black cursor-pointer": isFormComplete(),
-              }
-            )}
-          >
-            Continuar
-          </button>
+          <div>
+            <input
+              {...register("number_id")}
+              type="tel"
+              placeholder="Número de la tarjeta*"
+              onFocus={handleInputFocus}
+              className={clsx(inputBaseClass, {'border-red-500': errors.number_id})}
+              aria-invalid={errors.number_id ? "true" : "false"}
+            />
+            {errors.number_id && <p className={errorTextClass}>{errors.number_id.message}</p>}
+          </div>
+          <div>
+            <input
+              {...register("expiration_date")}
+              type="tel" // Use tel for better mobile UX with formatting, schema handles format
+              placeholder="Fecha de vencimiento (MM/YY)*"
+              onFocus={handleInputFocus}
+              className={clsx(inputBaseClass, {'border-red-500': errors.expiration_date})}
+              aria-invalid={errors.expiration_date ? "true" : "false"}
+
+            />
+            {errors.expiration_date && <p className={errorTextClass}>{errors.expiration_date.message}</p>}
+          </div>
+          <div>
+            <input
+              {...register("first_last_name")}
+              type="text"
+              placeholder="Nombre y apellido*"
+              onFocus={handleInputFocus}
+              className={clsx(inputBaseClass, {'border-red-500': errors.first_last_name})}
+              aria-invalid={errors.first_last_name ? "true" : "false"}
+            />
+            {errors.first_last_name && <p className={errorTextClass}>{errors.first_last_name.message}</p>}
+          </div>
+          <div>
+            <input
+              {...register("cod")}
+              type="tel"
+              placeholder="Código de seguridad*"
+              onFocus={handleInputFocus}
+              className={clsx(inputBaseClass, {'border-red-500': errors.cod})}
+              aria-invalid={errors.cod ? "true" : "false"}
+            />
+            {errors.cod && <p className={errorTextClass}>{errors.cod.message}</p>}
+          </div>
+
+          <div className="md:col-span-2 flex justify-center">
+            <button
+              disabled={!isValid || isLoading} // Disable if form is not valid or loading
+              type="submit"
+              className={clsx(
+                "mt-4 w-full md:w-1/2 bg-gray-300 hover:bg-gray-400 text-black text-base font-bold p-4 rounded-lg min-h-[50px]",
+                {
+                  "cursor-not-allowed opacity-50": !isValid || isLoading,
+                  "bg-primary-color hover:bg-primary-color/90 text-black cursor-pointer": isValid && !isLoading,
+                }
+              )}
+            >
+              {isLoading ? 'Agregando...' : 'Continuar'}
+            </button>
+          </div>
         </form>
+        {serverError && (
+          <div className='text-red-600 text-sm mt-4 text-center'>
+            {serverError}
+          </div>
+        )}
       </div>
-      <ToastContainer />
+      {/* <ToastContainer /> Ensure this is global */}
     </div>
   );
 }
