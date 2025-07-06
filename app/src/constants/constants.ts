@@ -35,3 +35,26 @@ export const LINK_BUTTON_BALANCED = {
 export const LINK_BUTTON_ACTIVITY = {
    'Actividad':{ label: 'Actividad', href: '/dashboard/activity' }
 }
+
+// Constants from ActivityList.tsx
+export const ACTIVITY_ITEMS_PER_PAGE = 10;
+
+export const ACTIVITY_FILTER_PERIODS = [
+  'Hoy',
+  'Ayer',
+  'Última semana',
+  'Últimos 15 días',
+  'Último mes',
+  'Último año',
+] as const; // Use 'as const' for stricter typing of array elements if beneficial
+
+// It can also be an object for easier lookup if needed, though array is fine for mapping.
+// export const ACTIVITY_FILTER_PERIODS_MAP = {
+//   HOY: 'Hoy',
+//   AYER: 'Ayer',
+//   ULTIMA_SEMANA: 'Última semana',
+//   ULTIMOS_15_DIAS: 'Últimos 15 días',
+//   ULTIMO_MES: 'Último mes',
+//   ULTIMO_ANO: 'Último año',
+// } as const;
+// And then: export const ACTIVITY_FILTER_PERIOD_LABELS = Object.values(ACTIVITY_FILTER_PERIODS_MAP);

@@ -1,105 +1,136 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, AlertCircle } from 'lucide-react'; // Added AlertCircle
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { UserData } from '@/types/login';
+import { useForm, SubmitHandler } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import { UserData } from '@/types/login'; // This is { email: string, password?: string }
 import { getAuthenticated } from '@/services/auth';
+import { schemaLogin } from '@/schemas/login';
 import Step1 from './Form1';
 import Step2 from './Form2';
+import Button from '../common/Button'; // Import the new Button component
 
-const initialState = {
-  email: '',
-  password: '',
-};
+// If UserData from @/types/login is just { email: string, password?: string }
+// and schemaLogin is { email, password }, we should use a type derived from schema for form data.
+export type LoginFormInputs = yup.InferType<typeof schemaLogin>; // Exported type
+
+enum ServerErrorType {
+  LoginError = 'Error al iniciar sesión, intenta de nuevo',
+}
 
 export default function LoginForm() {
-  const [userData, setUserData] = useState<UserData>(initialState);
-  const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<number>(1);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [serverError, setServerError] = useState<string | null>(null);
   const router = useRouter();
 
+  const {
+    register,
+    handleSubmit: hookFormSubmit,
+    formState: { errors },
+    trigger,
+    watch,
+    resetField,
+  } = useForm<LoginFormInputs>({
+    resolver: yupResolver(schemaLogin),
+    mode: 'onChange', // Validate on change for better UX for field errors
+  });
 
-  const handleChangeEmail = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    
-    if(!value){
-       setError('Campo requerido');
+  const currentPassword = watch('password');
+
+  const handleNextStep = async () => {
+    const emailIsValid = await trigger("email");
+    if (emailIsValid) {
+      setStep(2);
+      setServerError(null); // Clear server error when moving to next step
     }
-
-    setUserData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
   };
 
-  const nextStep = () =>{
-    if(!userData.email){
-       return setError('Campo requerido');
+  const handleNavigateBack = () => {
+    if (step === 2) {
+      setStep(1);
+      // Optionally clear password field when going back if desired
+      // resetField('password'); // Clears password and its errors
+      setServerError(null); // Clear server error
     }
-    setStep(2)
-    setError(null)
-  }
-
-   const handleChangePassword = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    
-    if(!value){
-       setError('Campo requerido');
-    }
-
-    setUserData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
   };
 
-
-  const handleSubmit = async () => {
+  const onSubmit: SubmitHandler<LoginFormInputs> = async (data) => {
+    setIsLoading(true);
+    setServerError(null);
     try {
-     
-      await getAuthenticated(userData);
-
+      // Assuming getAuthenticated expects UserData which might be slightly different from LoginFormInputs
+      // Ensure data passed to getAuthenticated matches its expected type.
+      // If UserData can have an undefined password, and LoginFormInputs requires it, this is fine.
+      await getAuthenticated(data as UserData);
       router.push(`/dashboard`);
     } catch (e) {
-      console.log(e)
-      setError('Error al iniciar sesión intenta de nuevo');
+      console.error(e);
+      setServerError(ServerErrorType.LoginError);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  //Falta form STEP
-  const handleBack = () => {
-    setUserData(initialState);
-    setError(null);
-    setStep(1)
+  const handleErrorDisplayClick = () => {
+    if (serverError === ServerErrorType.LoginError) {
+      // Clear server error and potentially password to allow retry
+      setServerError(null);
+      resetField('password');
+    }
+    // For field errors, react-hook-form handles them, no need for this click handler
   };
 
   return (
     <div className='w-full max-w-sm'>
+      {/* Using a single form element to wrap all steps for react-hook-form */}
+      <form onSubmit={hookFormSubmit(onSubmit)} noValidate>
         {step === 1 && (
-          <Step1 handleChange={handleChangeEmail} error={error} nextStep={nextStep}/>
+          <Step1
+            register={register}
+            errors={errors}
+            onNextStep={handleNextStep}
+          />
         )}
         {step === 2 && (
           <>
-            <Step2 handleChange={handleChangePassword} error={error}/>
-            <button
-            onClick={handleSubmit}
-            disabled={false}
-            className=' cursor-pointer text-base sm:text-lg text-black rounded-lg w-full btn-primary p-2 font-bold  mb-2 sm:min-h-[64px] sm:min-w-[360px] min-w-[300px] min-h-[50px]'
+            <Button
+              type="button"
+              variant="tertiary"
+              onClick={handleNavigateBack}
+              className="mb-4 self-start px-0 py-0 text-sm text-gray-600 hover:text-gray-800"
+              leftIcon={<ArrowLeft className='w-4 h-4' />}
+              aria-label="Volver al paso anterior"
             >
-            Ingresar
-            </button>
+              Volver
+            </Button>
+            <Step2 register={register} errors={errors} />
+            <Button
+              type="submit"
+              variant="primary"
+              size="large"
+              fullWidth
+              isLoading={isLoading}
+              disabled={isLoading || !currentPassword || !!errors.password}
+              className="mb-2"
+            >
+              {isLoading ? 'Ingresando...' : 'Ingresar'}
+            </Button>
           </>
         )}
-        {error && (
-          <div
-            className='text-error flex items-center mt-4 mb-4 gap-2 cursor-pointer'
-            onClick={handleBack}
-          >
-            <ArrowLeft className='w-6 h-6 ' />
-            <p className='text-sm italic font-normal'>{error}</p>
-          </div>
-        )}
+      </form>
+      {/* Display server error from API submission */}
+      {serverError && (
+        <div
+          className='text-error flex items-center mt-4 mb-4 gap-2 cursor-pointer'
+          onClick={handleErrorDisplayClick} // Clicking this clears the error and resets password
+        >
+          <AlertCircle className='w-6 h-6 text-red-500' /> {/* Changed Icon */}
+          <p className='text-sm italic font-normal'>{serverError}</p>
+        </div>
+      )}
+      {/* Field-specific errors are now handled by Step1 and Step2 via props.errors */}
     </div>
   );
 }

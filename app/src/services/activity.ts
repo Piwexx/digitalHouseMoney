@@ -1,30 +1,26 @@
 import { ActivityItem } from "@/types/activity";
-import {httpGet} from "./common/http";
+import { httpGet } from "./common/http";
 
-export async function getActivitys(id: number, token: string, options = {}): Promise<ActivityItem []> {
-	return httpGet(undefined,`/accounts/${id}/activity`, {
-		headers: {
-			"Content-Type": "application/json",
-			"Authorization":token
-		},
-		...options,
-	})
-		.then((data) => data as any)
-		.catch((error) => {
-			throw error;
-		});
+// Renamed function to follow camelCase convention: getActivitys -> getActivities
+export async function getActivities(accountId: number, token: string, options = {}): Promise<ActivityItem[]> {
+  const data = await httpGet(undefined, `/accounts/${accountId}/activity`, {
+    headers: {
+      // "Content-Type": "application/json", // Not needed for GET
+      "Authorization": token,
+    },
+    ...options,
+  });
+  return data as ActivityItem[];
 }
 
-export async function getTransactions(id: number, token: string, options = {},idTransation:number): Promise<ActivityItem> {
-	return httpGet(undefined,`/accounts/${id}/transactions/${idTransation}`, {
-		headers: {
-			"Content-Type": "application/json",
-			"Authorization":token
-		},
-		...options,
-	})
-		.then((data) => data as any)
-		.catch((error) => {
-			throw error;
-		});
+// Renamed idTransation to idTransaction for clarity and typo correction
+export async function getTransactionById(accountId: number, token: string, idTransaction: number, options = {}): Promise<ActivityItem> {
+  const data = await httpGet(undefined, `/accounts/${accountId}/transactions/${idTransaction}`, {
+    headers: {
+      // "Content-Type": "application/json",
+      "Authorization": token,
+    },
+    ...options,
+  });
+  return data as ActivityItem;
 }

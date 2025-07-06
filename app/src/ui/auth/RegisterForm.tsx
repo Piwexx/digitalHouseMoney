@@ -1,109 +1,116 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-'use client'
-import { FormEvent, useState } from "react";
-import {RegisterData} from "@/types/register"
+'use client';
+import { useState } from "react";
+import { useForm, SubmitHandler } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup'; // Import yup for InferType
+import { PostRegisterBody } from "@/types/register"; // Assuming this type is mainly for the API body
 import { postRegister } from "@/services/auth";
 import { useRouter } from "next/navigation";
 import { schemaRegister } from "@/schemas/register";
-import clsx from "clsx";
+import clsx from "clsx"; // May still be needed for button, or can be removed if button takes over all styling
+import Input from "../common/Input"; // Import Input component
+import Button from "../common/Button"; // Import Button component
 
-const initialState = {
-  dni:  '',
-  email: '',
-  firstname: '',
-  lastname: '',
-  password: '',
-  confirmPassword: '',
-  phone: '',
-};
+// Type for form data, inferred from the schema
+type RegisterFormInputs = yup.InferType<typeof schemaRegister>;
 
 export default function RegisterForm() {
-  const [userData, setUserData] = useState<RegisterData>(initialState);
-  const [error, setError] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const router = useRouter();
 
-  const inputClass = clsx('w-full p-2 rounded-xl text-black mb-4 bg-white text-base sm:text-lg sm:min-h-[64px] sm:min-w-[360px] min-w-[300px] min-h-[50px]',
-                        {
-                          'border-2 border-red-500': error,
-                        })
-                      
-   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    if(!value){
-       setError('Campo requeridos');
-    }
+  const {
+    register,
+    handleSubmit: hookFormSubmit,
+    formState: { errors },
+  } = useForm<RegisterFormInputs>({
+    resolver: yupResolver(schemaRegister),
+    mode: 'onChange', // Validate on change for better UX
+  });
 
-    setUserData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
+  const onSubmit: SubmitHandler<RegisterFormInputs> = async (data) => {
+    setIsLoading(true);
+    setServerError(null);
+
+    // Prepare the body for the API, ensuring dni is a number and confirmPassword is not sent
+    const { confirmPassword, ...restData } = data; // Exclude confirmPassword
+    const apiBody: PostRegisterBody = {
+      ...restData,
+      dni: Number(data.dni),
+    };
+
+    try {
+      const resp = await postRegister(apiBody);
+      if (resp) { // Assuming postRegister returns a truthy value on success
+        router.push(`/register/success`);
+      } else {
+        // Handle cases where API might not throw but indicates failure
+        setServerError('Error al registrar. Intenta de nuevo.');
+      }
+    } catch (err: any) {
+      console.error("Registration error:", err);
+      // HttpError from http.ts might contain response details
+      if (err.response && typeof err.response.json === 'function') {
+        try {
+          const errorData = await err.response.json();
+          setServerError(errorData.message || errorData.error || 'Error al registrar. Intenta de nuevo.');
+        } catch (jsonError) {
+          setServerError('Error al registrar. Intenta de nuevo.');
+        }
+      } else {
+        setServerError(err.message || 'Error al registrar. Intenta de nuevo.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleSubmit = async (e:FormEvent<HTMLFormElement>) => {
-      e.preventDefault()
-    
-      const {dni} = userData
+  // Define common input class for this form, to be passed to the Input component
+  const formInputClassName = "p-2 sm:text-lg sm:min-h-[64px] sm:min-w-[360px] min-w-[300px] min-h-[50px]";
+  // Container class for each input + error message
+  const inputContainerClassName = "mb-0"; // Input component has mb-4 default, override if inputs are closer
 
-      const body = {
-        ...userData,
-        dni:Number(dni)
-      }
-      try {
-        await schemaRegister.validate(userData)
-        
-        const resp = await postRegister(body);
-      
-       if(resp){
-          router.push(`/register/success`);
-         }
-       
-      } catch (err: any) {
-        if (err.name === 'ValidationError') {
-          console.log(err.errors[0])
-         setError(err.errors[0]); 
-        }else {
-        setError('Error al registrar intenta de nuevo');
-      }
-      };
-  }
-  
   return (
     <>
       <form
-        onSubmit={handleSubmit}
+        onSubmit={hookFormSubmit(onSubmit)}
+        noValidate // Prevent default browser validation
         className="w-full max-w-4xl p-8 rounded-lg"
       >
         <h2 className="w-full max-w-4xl mb-6 text-xl font-semibold text-center">Crear cuenta</h2>
 
         <div className="max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-x-10">
-          {/* border-red-500 border-2 */}
-          <input
-            onChange={handleChange}
+          <Input
             type="text"
-            name="firstname"
             placeholder="Nombre*"
-            className={inputClass}
+            registration={register("firstname")}
+            error={errors.firstname}
+            inputClassName={formInputClassName}
+            containerClassName={inputContainerClassName}
           />
-          <input
-            onChange={handleChange}
+          <Input
             type="text"
-            name="lastname"
             placeholder="Apellido*"
-            className={inputClass}
+            registration={register("lastname")}
+            error={errors.lastname}
+            inputClassName={formInputClassName}
+            containerClassName={inputContainerClassName}
           />
-          <input
-            onChange={handleChange}
-            type="text"
-            name="dni"
+          <Input
+            type="text" // Keep as text for RHF, schema handles numeric check
             placeholder="DNI*"
-            className={inputClass}
+            registration={register("dni")}
+            error={errors.dni}
+            inputClassName={formInputClassName}
+            containerClassName={inputContainerClassName}
           />
-          <input
-            onChange={handleChange}
+          <Input
             type="email"
-            name="email"
             placeholder="Correo electrónico*"
-            className={inputClass}
+            registration={register("email")}
+            error={errors.email}
+            inputClassName={formInputClassName}
+            containerClassName={inputContainerClassName}
           />
         </div>
 
@@ -111,44 +118,49 @@ export default function RegisterForm() {
           Usa entre 6 y 20 caracteres (debe contener al menos 1 carácter especial, una mayúscula y un número)
         </p>
 
-        <div className="max-w-4xl  grid grid-cols-1 md:grid-cols-2 gap-x-10">
-          <input
-            onChange={handleChange}
+        <div className="max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-x-10">
+          <Input
             type="password"
-            name="password"
             placeholder="Contraseña*"
-            className={inputClass}
+            registration={register("password")}
+            error={errors.password}
+            inputClassName={formInputClassName}
+            containerClassName={inputContainerClassName}
           />
-          <input
-            onChange={handleChange}
+          <Input
             type="password"
-            name="confirmPassword"
             placeholder="Confirmar contraseña*"
-            className={inputClass}
+            registration={register("confirmPassword")}
+            error={errors.confirmPassword}
+            inputClassName={formInputClassName}
+            containerClassName={inputContainerClassName}
           />
-          <input
-            onChange={handleChange}
+          <Input
             type="tel"
-            name="phone"
             placeholder="Teléfono*"
-            className={inputClass}
+            registration={register("phone")}
+            error={errors.phone}
+            inputClassName={formInputClassName}
+            containerClassName={inputContainerClassName}
           />
-          <button
+          <Button
             type="submit"
-            className="cursor-pointer text-base sm:text-lg mb-4 rounded-lg w-full btn-primary p-2 font-bold text-black sm:min-h-[64px] sm:min-w-[360px] min-w-[300px] min-h-[50px]"
+            variant="primary"
+            size="large"
+            fullWidth
+            isLoading={isLoading}
+            disabled={isLoading}
+            className="sm:min-h-[64px] sm:min-w-[360px] min-w-[300px] min-h-[50px] mb-4 p-2" // Re-apply specific sizing/margin from original
           >
-            Crear cuenta
-          </button>
+            {isLoading ? 'Creando cuenta...' : 'Crear cuenta'}
+          </Button>
         </div>
-        {error && (
-          <div
-            className='text-error flex items-center mt-4 mb-4 gap-2 cursor-pointer'
-          >
-            <p className='text-sm italic font-normal text-red-500'>{error}</p>
+        {serverError && (
+          <div className='text-error flex items-center justify-center mt-4 mb-4 gap-2'> {/* Was missing justify-center */}
+            <p className='text-sm italic font-normal text-red-500'>{serverError}</p>
           </div>
-      )}
+        )}
       </form>
     </>
   );
-
 }

@@ -55,10 +55,21 @@ export default function Header({userInfo }:Props) {
               </div>
            </Link>
           <p className="text-white text-lg hidden md:block">Hola, {userInfo?.firstname} {userInfo?.lastname}</p>
-            <label htmlFor="sidebar-toggle" className="md:hidden cursor-pointer z-50">
-                <div className="peer-checked:hidden block">
-                  <Menu className="w-6 h-6" />
-                </div>
+            <label
+              htmlFor="sidebar-toggle"
+              className="md:hidden cursor-pointer z-50 p-2" // Added padding for easier click/tap target
+              tabIndex={0} // Make label focusable
+              aria-label="Abrir menú de navegación"
+              onKeyDown={(e) => { // Allow activation with Enter/Space if focused
+                if (e.key === ' ' || e.key === 'Enter') {
+                  e.preventDefault();
+                  document.getElementById('sidebar-toggle')?.click();
+                }
+              }}
+            >
+              {/* The visual state of the icon (Menu vs Close) could also be handled here if JS were used */}
+              {/* For CSS-only, the icon inside doesn't change, but the sidebar appears/disappears */}
+              <Menu className="w-6 h-6" />
             </label>
           </div>
          )}
