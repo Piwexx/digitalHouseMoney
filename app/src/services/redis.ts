@@ -5,20 +5,22 @@ class RedisService {
   private connectionPromise: Promise<void>;
 
   constructor() {
-    if (!process.env.REDIS_URL) {
-      console.error("REDIS_URL is not defined. Redis client will not be initialized.");
-      // Fallback or throw error, depending on how critical Redis is at startup
-      // For now, creating a dummy client or ensuring methods handle uninitialized state.
-      // However, createClient might throw if URL is undefined.
-      // Let's assume process.env.REDIS_URL is always defined for a running app.
-      // If it can be undefined, the app needs a strategy (e.g. disable features).
+    // REDIS_URL: Connection string for the Redis instance (e.g., redis://localhost:6379)
+    // Required for RedisService to function.
+    const redisUrl = process.env.REDIS_URL;
+    if (!redisUrl) {
+      console.error("REDIS_URL is not defined. Redis client will not be initialized correctly.");
+      // Throwing an error here might be preferable if Redis is critical at startup
+      // throw new Error("REDIS_URL environment variable is not set.");
+      // For now, allowing it to proceed, but client operations will likely fail if url is truly undefined.
+      // createClient might handle undefined url by defaulting or erroring.
     }
     
     this.client = createClient({
-      url: process.env.REDIS_URL,
+      url: redisUrl, // Use the checked variable
     });
 
-    this.client.on('error', (err) => console.error('Redis Client Error', err));
+    this.client.on('error', (err) => console.error('Redis Client Error:', err)); // Added colon for clarity
 
     this.connectionPromise = this.client.connect()
       .then(() => {

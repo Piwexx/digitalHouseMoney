@@ -1,6 +1,10 @@
+// Base URL for external API calls (e.g., Strapi or other backend services)
+// Falls back to empty string; resolveBase will throw an error if this is empty and no other base is provided.
+// Expected to be set in .env (e.g., https://api.yourbackend.com)
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
-//Si necesito auth, envio en options Authorization: token,
+// Default headers for JSON requests.
+// Authorization headers should be added per-request in options if needed.
 const defaultHeaders = {
   'Content-Type': 'application/json',
   Accept: 'application/json',

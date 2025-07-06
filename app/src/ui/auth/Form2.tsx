@@ -1,6 +1,7 @@
-import clsx from "clsx";
+// Removed clsx import as it's no longer needed if Input handles error styling
 import { UseFormRegister, FieldErrors } from 'react-hook-form';
-import { LoginFormInputs } from './LoginForm'; // Assuming LoginFormInputs is exported
+import { LoginFormInputs } from './LoginForm';
+import Input from '../common/Input'; // Import the new Input component
 
 interface Props {
   register: UseFormRegister<LoginFormInputs>;
@@ -14,21 +15,19 @@ export default function Step2({ register, errors }: Props) {
       <h2 className='mb-6 text-base font-semibold text-center'>
         Ingresá tu contraseña
       </h2>
-      <input
-        {...register("password")}
+      <Input
+        // label="Contraseña" // Optional label
         type='password'
         placeholder='Contraseña'
-        className={clsx(
-          'w-full p-2 rounded-xl text-black mb-4 bg-white text-base sm:text-lg sm:min-h-[64px] sm:min-w-[360px] min-w-[300px] min-h-[50px]',
-          {
-            'border-2 border-red-500': errors.password,
-          }
-        )}
-        aria-invalid={errors.password ? "true" : "false"}
+        registration={register("password")}
+        error={errors.password}
+        inputClassName='sm:text-lg sm:min-h-[64px] sm:min-w-[360px] min-w-[300px] min-h-[50px] p-2' // Keep original styling
+        // containerClassName="mb-4" // Default is mb-4
       />
-      {errors.password && (
+      {/* Error display is now handled within the Input component */}
+      {/* {errors.password && (
         <p className='text-red-500 text-sm mb-2'>{errors.password.message}</p>
-      )}
+      )} */}
     </>
   );
 }

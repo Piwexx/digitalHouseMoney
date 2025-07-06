@@ -7,7 +7,9 @@ import { Filter, SearchCodeIcon } from 'lucide-react';
 import { ActivityItem } from '@/types/activity';
 import ActivityListItemDisplay from './ActivityListItemDisplay';
 import { isWithinPeriod } from '@/utils/isWithinPeriod';
-import Button from '@/app/src/ui/common/Button'; // Import common Button
+import Button from '@/app/src/ui/common/Button';
+import Panel from '@/app/src/ui/common/layout/Panel';
+import PageTitle from '@/app/src/ui/common/layout/PageTitle'; // Import PageTitle
 
 // Basic debounce utility
 function debounce<F extends (...args: any[]) => any>(func: F, waitFor: number) {
@@ -19,17 +21,8 @@ function debounce<F extends (...args: any[]) => any>(func: F, waitFor: number) {
       }
       timeoutId = setTimeout(() => resolve(func(...args)), waitFor);
     });
-}
+import { ACTIVITY_FILTER_PERIODS, ACTIVITY_ITEMS_PER_PAGE } from '@/constants/constants';
 
-
-const periods = [
-  'Hoy',
-  'Ayer',
-  'Última semana',
-  'Últimos 15 días',
-  'Último mes',
-  'Último año',
-];
 
 interface Props {
   activities: ActivityItem[];
@@ -41,10 +34,11 @@ export default function ActivityList({ activities }: Props) {
 
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [filteredPeriod, setFilteredPeriod] = useState('Último año');
+  // Initialize filteredPeriod with one of the constant values, e.g., the last one
+  const [filteredPeriod, setFilteredPeriod] = useState(ACTIVITY_FILTER_PERIODS[ACTIVITY_FILTER_PERIODS.length - 1]);
   const [currentPage, setCurrentPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
-  const itemsPerPage = 10;
+  // itemsPerPage is now from constants
 
   // Effect to read initial search query from URL
   useEffect(() => {
@@ -63,14 +57,14 @@ export default function ActivityList({ activities }: Props) {
 
   const paginatedData = useMemo(() => {
     return filteredData.slice(
-      (currentPage - 1) * itemsPerPage,
-      currentPage * itemsPerPage
+      (currentPage - 1) * ACTIVITY_ITEMS_PER_PAGE,
+      currentPage * ACTIVITY_ITEMS_PER_PAGE
     );
-  }, [filteredData, currentPage, itemsPerPage]);
+  }, [filteredData, currentPage]); // Removed itemsPerPage from deps as it's a constant
 
   const totalPages = useMemo(() => {
-    return Math.ceil(filteredData.length / itemsPerPage);
-  }, [filteredData, itemsPerPage]);
+    return Math.ceil(filteredData.length / ACTIVITY_ITEMS_PER_PAGE);
+  }, [filteredData]); // Removed itemsPerPage from deps
 
   // Debounced function to update URL and actual search term for filtering
   const updateSearchQuery = useCallback((query: string) => {
@@ -152,17 +146,18 @@ export default function ActivityList({ activities }: Props) {
             </Button>
           </div>
           <div className='flex flex-col gap-2'>
-            {periods.map((p) => (
+            {ACTIVITY_FILTER_PERIODS.map((p) => (
               <label
                 key={p}
                 className='text-gray-600 flex flex-row-reverse justify-between items-center gap-2 mb-2'
               >
                 <input
-                  className='outline-black '
+                  className='outline-black ' // Consider custom focus ring for better visibility
                   type='radio'
                   name='period'
+                  value={p} // Add value attribute
                   checked={filteredPeriod === p}
-                  onChange={() => setFilteredPeriod(p)}
+                  onChange={() => handlePeriodChange(p)} // Use existing handler
                 />
                 {p}
               </label>
@@ -181,9 +176,15 @@ export default function ActivityList({ activities }: Props) {
       )}
 
       {/* Activity List */}
-      <div className='rounded-xl w-full bg-white shadow flex flex-col min-h-[300px] p-2'>
+      <Panel
+        padding="sm" // original p-2
+        rounded="xl" // original rounded-xl
+        shadow="md"   // original shadow (assuming default md is similar)
+        className="flex flex-col min-h-[300px]" // Keep flex specific styles and min-height
+      >
         <div className='flex justify-between items-center p-4 border-b-1 border-gray-100'>
-            <h3 className='text-black text-base font-bold'>Tu actividad</h3>
+            <PageTitle as="h3" className="text-base mb-0">Tu actividad</PageTitle>
+            {/* mb-0 to override default margin from PageTitle if not needed here */}
             {/* This button is a div with an onClick, could be a Button component if styled appropriately */}
             <Button
               variant="tertiary" // or a new 'link' variant if desired

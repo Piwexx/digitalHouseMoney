@@ -1,8 +1,8 @@
-import { clsx } from 'clsx';
 import Link from 'next/link';
 import { UseFormRegister, FieldErrors } from 'react-hook-form';
-import { LoginFormInputs } from './LoginForm'; // Assuming LoginFormInputs is exported or define locally
-import Button from '../common/Button'; // Import the new Button component
+import { LoginFormInputs } from './LoginForm';
+import Button from '../common/Button';
+import Input from '../common/Input'; // Import the new Input component
 
 interface Props {
   register: UseFormRegister<LoginFormInputs>;
@@ -16,22 +16,20 @@ export default function Step1({ register, errors, onNextStep }: Props) {
       <h2 className='mb-6 text-base font-semibold text-center'>
         ¡Hola! Ingresá tu e-mail
       </h2>
-      {/* TODO: Refactor input to a reusable Input component in a later step */}
-      <input
-        {...register("email")}
+      <Input
+        // label="Correo electrónico" // Optional label
         type='email'
         placeholder='Correo electrónico'
-        className={clsx(
-          'w-full p-2 rounded-xl text-black mb-4 bg-white text-base sm:text-lg sm:min-h-[64px] sm:min-w-[360px] min-w-[300px] min-h-[50px]',
-          {
-            'border-2 border-red-500': errors.email,
-          }
-        )}
-        aria-invalid={errors.email ? "true" : "false"}
+        registration={register("email")}
+        error={errors.email}
+        // Apply specific height/width styling for this form if needed via inputClassName
+        inputClassName='sm:text-lg sm:min-h-[64px] sm:min-w-[360px] min-w-[300px] min-h-[50px] p-2' // Kept p-2 from original, default is p-3
+        // containerClassName="mb-4" // Default is mb-4, can adjust if needed
       />
-      {errors.email && (
+      {/* Error display is now handled within the Input component */}
+      {/* {errors.email && (
         <p className='text-red-500 text-sm mb-2'>{errors.email.message}</p>
-      )}
+      )} */}
       <Button
         type="button"
         onClick={onNextStep}

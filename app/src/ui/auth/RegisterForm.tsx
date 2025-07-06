@@ -7,7 +7,9 @@ import { PostRegisterBody } from "@/types/register"; // Assuming this type is ma
 import { postRegister } from "@/services/auth";
 import { useRouter } from "next/navigation";
 import { schemaRegister } from "@/schemas/register";
-import clsx from "clsx";
+import clsx from "clsx"; // May still be needed for button, or can be removed if button takes over all styling
+import Input from "../common/Input"; // Import Input component
+import Button from "../common/Button"; // Import Button component
 
 // Type for form data, inferred from the schema
 type RegisterFormInputs = yup.InferType<typeof schemaRegister>;
@@ -30,10 +32,11 @@ export default function RegisterForm() {
     setIsLoading(true);
     setServerError(null);
 
-    // Prepare the body for the API, ensuring dni is a number
+    // Prepare the body for the API, ensuring dni is a number and confirmPassword is not sent
+    const { confirmPassword, ...restData } = data; // Exclude confirmPassword
     const apiBody: PostRegisterBody = {
-      ...data,
-      dni: Number(data.dni), // DNI is string in form, number in API type
+      ...restData,
+      dni: Number(data.dni),
     };
 
     try {
@@ -62,9 +65,10 @@ export default function RegisterForm() {
     }
   };
 
-  const inputBaseClass = 'w-full p-2 rounded-xl text-black mb-1 bg-white text-base sm:text-lg sm:min-h-[64px] sm:min-w-[360px] min-w-[300px] min-h-[50px]';
-  const errorClass = 'border-2 border-red-500';
-  const errorTextClass = 'text-red-500 text-sm mb-2';
+  // Define common input class for this form, to be passed to the Input component
+  const formInputClassName = "p-2 sm:text-lg sm:min-h-[64px] sm:min-w-[360px] min-w-[300px] min-h-[50px]";
+  // Container class for each input + error message
+  const inputContainerClassName = "mb-0"; // Input component has mb-4 default, override if inputs are closer
 
   return (
     <>
@@ -76,46 +80,38 @@ export default function RegisterForm() {
         <h2 className="w-full max-w-4xl mb-6 text-xl font-semibold text-center">Crear cuenta</h2>
 
         <div className="max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-x-10">
-          <div>
-            <input
-              {...register("firstname")}
-              type="text"
-              placeholder="Nombre*"
-              className={clsx(inputBaseClass, { [errorClass]: errors.firstname })}
-              aria-invalid={errors.firstname ? "true" : "false"}
-            />
-            {errors.firstname && <p className={errorTextClass}>{errors.firstname.message}</p>}
-          </div>
-          <div>
-            <input
-              {...register("lastname")}
-              type="text"
-              placeholder="Apellido*"
-              className={clsx(inputBaseClass, { [errorClass]: errors.lastname })}
-              aria-invalid={errors.lastname ? "true" : "false"}
-            />
-            {errors.lastname && <p className={errorTextClass}>{errors.lastname.message}</p>}
-          </div>
-          <div>
-            <input
-              {...register("dni")}
-              type="text" // Keep as text for RHF, schema handles numeric check
-              placeholder="DNI*"
-              className={clsx(inputBaseClass, { [errorClass]: errors.dni })}
-              aria-invalid={errors.dni ? "true" : "false"}
-            />
-            {errors.dni && <p className={errorTextClass}>{errors.dni.message}</p>}
-          </div>
-          <div>
-            <input
-              {...register("email")}
-              type="email"
-              placeholder="Correo electrónico*"
-              className={clsx(inputBaseClass, { [errorClass]: errors.email })}
-              aria-invalid={errors.email ? "true" : "false"}
-            />
-            {errors.email && <p className={errorTextClass}>{errors.email.message}</p>}
-          </div>
+          <Input
+            type="text"
+            placeholder="Nombre*"
+            registration={register("firstname")}
+            error={errors.firstname}
+            inputClassName={formInputClassName}
+            containerClassName={inputContainerClassName}
+          />
+          <Input
+            type="text"
+            placeholder="Apellido*"
+            registration={register("lastname")}
+            error={errors.lastname}
+            inputClassName={formInputClassName}
+            containerClassName={inputContainerClassName}
+          />
+          <Input
+            type="text" // Keep as text for RHF, schema handles numeric check
+            placeholder="DNI*"
+            registration={register("dni")}
+            error={errors.dni}
+            inputClassName={formInputClassName}
+            containerClassName={inputContainerClassName}
+          />
+          <Input
+            type="email"
+            placeholder="Correo electrónico*"
+            registration={register("email")}
+            error={errors.email}
+            inputClassName={formInputClassName}
+            containerClassName={inputContainerClassName}
+          />
         </div>
 
         <p className="text-sm text-white mt-2 mb-4 text-center">
@@ -123,46 +119,44 @@ export default function RegisterForm() {
         </p>
 
         <div className="max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-x-10">
-          <div>
-            <input
-              {...register("password")}
-              type="password"
-              placeholder="Contraseña*"
-              className={clsx(inputBaseClass, { [errorClass]: errors.password })}
-              aria-invalid={errors.password ? "true" : "false"}
-            />
-            {errors.password && <p className={errorTextClass}>{errors.password.message}</p>}
-          </div>
-          <div>
-            <input
-              {...register("confirmPassword")}
-              type="password"
-              placeholder="Confirmar contraseña*"
-              className={clsx(inputBaseClass, { [errorClass]: errors.confirmPassword })}
-              aria-invalid={errors.confirmPassword ? "true" : "false"}
-            />
-            {errors.confirmPassword && <p className={errorTextClass}>{errors.confirmPassword.message}</p>}
-          </div>
-          <div>
-            <input
-              {...register("phone")}
-              type="tel"
-              placeholder="Teléfono*"
-              className={clsx(inputBaseClass, { [errorClass]: errors.phone })}
-              aria-invalid={errors.phone ? "true" : "false"}
-            />
-            {errors.phone && <p className={errorTextClass}>{errors.phone.message}</p>}
-          </div>
-          <button
+          <Input
+            type="password"
+            placeholder="Contraseña*"
+            registration={register("password")}
+            error={errors.password}
+            inputClassName={formInputClassName}
+            containerClassName={inputContainerClassName}
+          />
+          <Input
+            type="password"
+            placeholder="Confirmar contraseña*"
+            registration={register("confirmPassword")}
+            error={errors.confirmPassword}
+            inputClassName={formInputClassName}
+            containerClassName={inputContainerClassName}
+          />
+          <Input
+            type="tel"
+            placeholder="Teléfono*"
+            registration={register("phone")}
+            error={errors.phone}
+            inputClassName={formInputClassName}
+            containerClassName={inputContainerClassName}
+          />
+          <Button
             type="submit"
+            variant="primary"
+            size="large"
+            fullWidth
+            isLoading={isLoading}
             disabled={isLoading}
-            className="cursor-pointer text-base sm:text-lg mb-4 rounded-lg w-full btn-primary p-2 font-bold text-black sm:min-h-[64px] sm:min-w-[360px] min-w-[300px] min-h-[50px] disabled:opacity-50"
+            className="sm:min-h-[64px] sm:min-w-[360px] min-w-[300px] min-h-[50px] mb-4 p-2" // Re-apply specific sizing/margin from original
           >
             {isLoading ? 'Creando cuenta...' : 'Crear cuenta'}
-          </button>
+          </Button>
         </div>
         {serverError && (
-          <div className='text-error flex items-center justify-center mt-4 mb-4 gap-2'>
+          <div className='text-error flex items-center justify-center mt-4 mb-4 gap-2'> {/* Was missing justify-center */}
             <p className='text-sm italic font-normal text-red-500'>{serverError}</p>
           </div>
         )}

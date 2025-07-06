@@ -5,12 +5,14 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import Cards from 'react-credit-cards-2';
 import 'react-credit-cards-2/dist/es/styles-compiled.css';
-import { toast } from 'react-toastify'; // ToastContainer should be global
+import { toast } from 'react-toastify';
 import { useRouter } from "next/navigation";
 import { schemaCard } from "@/schemas/card";
 import { postCards } from "@/services/card";
 import { convertDateFormat } from "@/utils/converDataFormat";
-import clsx from "clsx";
+import clsx from "clsx"; // May still be needed for button, or can be removed
+import Input from "../../common/Input"; // Import Input component
+import Button from "../../common/Button"; // Import Button component
 
 interface Props {
   accountId: number;
@@ -98,68 +100,54 @@ export default function CreditCardForm({ accountId, token }: Props) {
         <form
           onSubmit={hookFormSubmit(onSubmit)}
           noValidate
-          className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mt-6 w-full"
+          className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 mt-6 w-full" // Reduced gap-y slightly
         >
-          <div>
-            <input
-              {...register("number_id")}
-              type="tel"
-              placeholder="Número de la tarjeta*"
-              onFocus={handleInputFocus}
-              className={clsx(inputBaseClass, {'border-red-500': errors.number_id})}
-              aria-invalid={errors.number_id ? "true" : "false"}
-            />
-            {errors.number_id && <p className={errorTextClass}>{errors.number_id.message}</p>}
-          </div>
-          <div>
-            <input
-              {...register("expiration_date")}
-              type="tel" // Use tel for better mobile UX with formatting, schema handles format
-              placeholder="Fecha de vencimiento (MM/YY)*"
-              onFocus={handleInputFocus}
-              className={clsx(inputBaseClass, {'border-red-500': errors.expiration_date})}
-              aria-invalid={errors.expiration_date ? "true" : "false"}
-
-            />
-            {errors.expiration_date && <p className={errorTextClass}>{errors.expiration_date.message}</p>}
-          </div>
-          <div>
-            <input
-              {...register("first_last_name")}
-              type="text"
-              placeholder="Nombre y apellido*"
-              onFocus={handleInputFocus}
-              className={clsx(inputBaseClass, {'border-red-500': errors.first_last_name})}
-              aria-invalid={errors.first_last_name ? "true" : "false"}
-            />
-            {errors.first_last_name && <p className={errorTextClass}>{errors.first_last_name.message}</p>}
-          </div>
-          <div>
-            <input
-              {...register("cod")}
-              type="tel"
-              placeholder="Código de seguridad*"
-              onFocus={handleInputFocus}
-              className={clsx(inputBaseClass, {'border-red-500': errors.cod})}
-              aria-invalid={errors.cod ? "true" : "false"}
-            />
-            {errors.cod && <p className={errorTextClass}>{errors.cod.message}</p>}
-          </div>
+          <Input
+            type="tel"
+            placeholder="Número de la tarjeta*"
+            registration={register("number_id")}
+            error={errors.number_id}
+            onFocus={handleInputFocus}
+            inputClassName="rounded-lg p-4 w-full text-black text-base border-2 input-border"
+            // containerClassName="mb-0" // Adjust if default mb-4 from Input is too much
+          />
+          <Input
+            type="tel"
+            placeholder="Fecha de vencimiento (MM/YY)*"
+            registration={register("expiration_date")}
+            error={errors.expiration_date}
+            onFocus={handleInputFocus}
+            inputClassName="rounded-lg p-4 w-full text-black text-base border-2 input-border"
+          />
+          <Input
+            type="text"
+            placeholder="Nombre y apellido*"
+            registration={register("first_last_name")}
+            error={errors.first_last_name}
+            onFocus={handleInputFocus}
+            inputClassName="rounded-lg p-4 w-full text-black text-base border-2 input-border"
+          />
+          <Input
+            type="tel"
+            placeholder="Código de seguridad*"
+            registration={register("cod")}
+            error={errors.cod}
+            onFocus={handleInputFocus}
+            inputClassName="rounded-lg p-4 w-full text-black text-base border-2 input-border"
+          />
 
           <div className="md:col-span-2 flex justify-center">
-            <button
-              disabled={!isValid || isLoading} // Disable if form is not valid or loading
+            <Button
               type="submit"
-              className={clsx(
-                "mt-4 w-full md:w-1/2 bg-gray-300 hover:bg-gray-400 text-black text-base font-bold p-4 rounded-lg min-h-[50px]",
-                {
-                  "cursor-not-allowed opacity-50": !isValid || isLoading,
-                  "bg-primary-color hover:bg-primary-color/90 text-black cursor-pointer": isValid && !isLoading,
-                }
-              )}
+              // Determine variant based on isValid, but Button handles disabled state styling
+              variant={(isValid && !isLoading) ? "primary" : "secondary"}
+              isLoading={isLoading}
+              disabled={!isValid || isLoading}
+              className="mt-4 w-full md:w-1/2 min-h-[50px] p-4" // Keep p-4 from original
+              // size prop could also be used if 'large' matches p-4 and min-h-[50px]
             >
               {isLoading ? 'Agregando...' : 'Continuar'}
-            </button>
+            </Button>
           </div>
         </form>
         {serverError && (

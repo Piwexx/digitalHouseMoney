@@ -1,7 +1,11 @@
 import { UserData, GetTokenResponse, PostLoginBody, PostLoginResponse } from "@/types/login";
 import { httpPost, httpGet } from "./common/http";
-import { PostRegisterBody, PostRegisterResponse } from '@/types/register'; // Corrected import path assuming types are in @/types
+import { PostRegisterBody, PostRegisterResponse } from '@/types/register';
 
+// Used for internal Next.js API routes (e.g., /api/login, /api/redis)
+// Falls back to empty string, but http.ts will throw if base URL is ultimately empty.
+// Expected to be set in .env for deployed environments (e.g., https://yourdomain.com)
+// For local dev, can be http://localhost:3000 if calling own API routes.
 const API_URL_PUBLIC = process.env.NEXT_PUBLIC_SITE_URL || '';
 
 // Placeholder for the actual response type of /api/login if different from PostLoginResponse
@@ -31,10 +35,18 @@ export async function getToken(
   sessionID: string,
   options = {}
 ): Promise<GetTokenResponse> {
+  const redisApiKey = process.env.REDIS_API_KEY;
+  if (!redisApiKey) {
+    console.error("REDIS_API_KEY is not configured.");
+    // Option 1: Throw an error
+    // throw new Error("Redis API key is not configured. Cannot get token.");
+    // Option 2: Return a promise that rejects or an error structure
+    return Promise.resolve({ token: '', error: "Configuration error: Missing Redis API Key." });
+  }
   return httpGet(API_URL_PUBLIC, `/api/redis?key=${sessionID}`, {
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${process.env.REDIS_API_KEY}`
+      "Authorization": `Bearer ${redisApiKey}`
     },
     ...options,
   }) as Promise<GetTokenResponse>;

@@ -1,19 +1,29 @@
 import React from 'react';
 import clsx from 'clsx';
-import { LucideProps } from 'lucide-react'; // For icon type
+import { LucideProps } from 'lucide-react';
 
 type ButtonVariant = 'primary' | 'secondary' | 'tertiary' | 'destructive-tertiary';
-type ButtonSize = 'medium' | 'large'; // Simplified for now
+type ButtonSize = 'medium' | 'large';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  /** Specifies the visual style of the button. */
   variant?: ButtonVariant;
-  size?: ButtonSize; // May not be strictly needed if padding and fullWidth handle most cases
+  /** Specifies the size of the button. Affects padding and minimum height. */
+  size?: ButtonSize;
+  /** If true, shows a loading spinner and disables the button. */
   isLoading?: boolean;
+  /** If true, the button will take up the full width of its container. */
   fullWidth?: boolean;
-  leftIcon?: React.ReactElement<LucideProps>; // For icons like ArrowLeft
-  rightIcon?: React.ReactElement<LucideProps>; // For icons like Filter
+  /** Optional icon to display to the left of the button text. */
+  leftIcon?: React.ReactElement<LucideProps>;
+  /** Optional icon to display to the right of the button text. */
+  rightIcon?: React.ReactElement<LucideProps>;
 }
 
+/**
+ * A versatile button component with variants, sizing, loading states, and icon support.
+ * It extends standard HTML button attributes.
+ */
 const Button: React.FC<ButtonProps> = ({
   variant = 'primary',
   size = 'medium',

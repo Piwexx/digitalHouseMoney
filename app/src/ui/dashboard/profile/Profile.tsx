@@ -29,51 +29,60 @@ type ProfileFormInputs = yup.InferType<typeof schemaEditProfile>;
 // but `token` and `user.id` for API calls will come from context.
 // Form's default values will also use context's user.
 
-export default function Profile({ userInfo: propUserInfo }: Props) { // Renamed prop to avoid clash
+export default function Profile({ userInfo: propUserInfo }: Props) {
   const router = useRouter();
-  const { user:authUser, token } = useAuth(); // Get user and token from context
+  const { user: authUser, token } = useAuth();
 
   const [editField, setEditField] = useState<Path<ProfileFormInputs> | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  // Determine the source of truth for user info, preferring context if available
+  const currentUserInfo = authUser || propUserInfo;
+  
   // No separate serverError state, RHF errors will show field errors, toast for general.
 
   const {
     register,
-    handleSubmit: hookFormSubmit, // Not used for per-field save, but good to have if a full form submit was ever needed
+    // handleSubmit: hookFormSubmit, // Not used for per-field save
     formState: { errors, dirtyFields },
-    setValue,
+    // setValue, // Not directly used, reset and register handle updates
     trigger,
     getValues,
-    reset, // To reset form to original/updated values
+    reset,
   } = useForm<ProfileFormInputs>({
     resolver: yupResolver(schemaEditProfile),
     mode: 'onChange',
-    defaultValues: { // Initialize with propUserInfo, then update with authUser if available
-      firstname: authUser?.firstname || propUserInfo.firstname,
-      lastname: authUser?.lastname || propUserInfo.lastname,
-      phone: authUser?.phone || propUserInfo.phone,
+    defaultValues: {
+      firstname: currentUserInfo?.firstname || '', // Fallback to empty string if currentUserInfo is null
+      lastname: currentUserInfo?.lastname || '',
+      phone: currentUserInfo?.phone || '',
     },
   });
 
-  // Effect to update form default values if authUser or propUserInfo prop changes
+  // Effect to update form default values if currentUserInfo changes
   useEffect(() => {
-    const userForForm = authUser || propUserInfo;
-    reset({
-      firstname: userForForm.firstname,
-      lastname: userForForm.lastname,
-      phone: userForForm.phone,
-    });
-  }, [authUser, propUserInfo, reset]);
+    if (currentUserInfo) {
+      reset({
+        firstname: currentUserInfo.firstname,
+        lastname: currentUserInfo.lastname,
+        phone: currentUserInfo.phone,
+      });
+    }
+  }, [currentUserInfo, reset]);
+
+  if (!currentUserInfo) {
+    // Or a more sophisticated loading skeleton/spinner
+    return <div className="bg-white text-black rounded-lg p-8 mt-4">Cargando perfil...</div>;
+  }
 
   const handleEdit = (field: Path<ProfileFormInputs>) => {
     setEditField(field);
   };
 
   const handleCancelEdit = () => {
-    if (editField) {
-      const userForReset = authUser || propUserInfo;
-      // Reset the field to its original value from userForReset (preferring authUser)
-      reset({ ...getValues(), [editField]: userForReset[editField as keyof User] as FieldNameValue<ProfileFormInputs, Path<ProfileFormInputs>> });
+    if (editField && currentUserInfo) {
+      // Reset the field to its original value from currentUserInfo
+      reset({ ...getValues(), [editField]: currentUserInfo[editField as keyof User] as FieldNameValue<ProfileFormInputs, Path<ProfileFormInputs>> });
     }
     setEditField(null);
   };
@@ -144,7 +153,7 @@ export default function Profile({ userInfo: propUserInfo }: Props) { // Renamed 
               <Button
                 variant="tertiary"
                 onClick={() => handleSave(field)}
-                disabled={isLoading || (!dirtyFields[field] && getValues(field) === (authUser || propUserInfo)[field as keyof User])}
+                disabled={isLoading || (!dirtyFields[field] && currentUserInfo && getValues(field) === currentUserInfo[field as keyof User])}
                 className="p-1 text-green-600 hover:text-green-800 disabled:text-green-600/50"
                 aria-label={`Guardar ${label}`}
               >

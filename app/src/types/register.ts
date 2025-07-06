@@ -9,13 +9,13 @@ export interface RegisterData {
 }
 
 export interface PostRegisterBody {
-	dni: number,
-  email: string,
-  firstname: string,
-  lastname: string,
-  password: string,
-  confirmPassword: string,
-  phone: string,
+	dni: number;
+  email: string;
+  firstname: string;
+  lastname: string;
+  password: string;
+  // confirmPassword should not be sent to the backend
+  phone: string;
 }
 
 export interface PostRegisterResponse {

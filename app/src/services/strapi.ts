@@ -27,11 +27,13 @@ export const getStrapiData = async <T = StrapiDataItem>(
   endpoint: string, // Consider using StrapiEndpoint if defined
   // params?: Record<string, string> // Optional: for query parameters like populate, filters
 ): Promise<GetStrapiDataResult<T>> => {
+  // STRAPI_URL: Base URL for the Strapi API (e.g., http://localhost:1337 or https://your-strapi-domain.com)
   const API_URL = process.env.STRAPI_URL;
-  const TOKEN = process.env.STRAPI_API;
+  // STRAPI_API_TOKEN: API token for authenticating with Strapi
+  const TOKEN = process.env.STRAPI_API_TOKEN; // Standard Strapi token name is STRAPI_API_TOKEN
 
   if (!API_URL || !TOKEN) {
-    console.error("Strapi URL or API Token is not configured.");
+    console.error("Strapi URL (STRAPI_URL) or API Token (STRAPI_API_TOKEN) is not configured.");
     return {
       data: null,
       error: "Strapi service is not configured.",
