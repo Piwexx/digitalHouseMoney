@@ -29,7 +29,6 @@ export default function Step1({ handleChange, error, nextStep }: Props) {
         />
         <button
           onClick={nextStep}
-          disabled={false}
           className='cursor-pointer text-base sm:text-lg text-black rounded-lg w-full btn-primary p-2 font-bold mb-2 sm:min-h-[64px] sm:min-w-[360px] min-w-[300px] min-h-[50px]'
         >
           Continuar

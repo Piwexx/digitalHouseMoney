@@ -24,9 +24,33 @@ export class HttpError extends Error {
 
 const handleResponse = async (response: Response): Promise<unknown> => {
   if (!response.ok) {
+    // Attempt to parse error response body for more context, if available
+    let errorData;
+    try {
+      errorData = await response.clone().json(); // Clone to be able to read body multiple times if needed
+    } catch (e) {
+      // Ignore if error response is not JSON or empty
+    }
+    // Include errorData in HttpError if available
     throw new HttpError(response);
   }
-  return response.json();
+
+  // Handle cases like 204 No Content, which have no body
+  if (response.status === 204 || response.headers.get("Content-Length") === "0") {
+    return null; // Or undefined, or even response itself if preferred
+  }
+
+  // Check content type before parsing, if necessary, though often response.json() handles it
+  const contentType = response.headers.get("content-type");
+  if (contentType && contentType.includes("application/json")) {
+    return response.json();
+  }
+  // Fallback for non-JSON responses or if content-type is missing/different but body is expected
+  // This part depends on API contract. For now, assume JSON or text might be possible.
+  // If strict JSON is always expected from successful non-204/empty responses,
+  // one might throw an error here if not application/json.
+  // However, response.json() itself will throw if content is not valid JSON.
+  return response.json(); // Let it attempt to parse, will fail for non-JSON.
 };
 
 /**
@@ -54,9 +78,10 @@ export const httpGet = async (base:string | undefined,endpoint: string , options
   return handleResponse(response);
 };
 
-export const httpGetRevalidate = async (base:string | undefined,endpoint: string, token: string, revalidateTag: string, options: HttpGetOptions = {}): Promise<unknown> => {
+// Made revalidateTag a parameter instead of hardcoding "user-info"
+export const httpGetRevalidate = async (base: string | undefined, endpoint: string, token: string, revalidateTag: string, options: HttpGetOptions = {}): Promise<unknown> => {
   const headers = {
-    Authorization: token,
+    Authorization: token, // Assuming token is always needed for revalidated gets
     ...defaultHeaders,
     ...options.headers,
   };
@@ -66,14 +91,14 @@ export const httpGetRevalidate = async (base:string | undefined,endpoint: string
     method: 'GET',
     headers,
     next: {
-      tags: ["user-info"],
+      tags: [revalidateTag], // Use the parameter here
     }
   });
   return handleResponse(response);
 };
 
 
-export const httpPost = async (base:string | undefined,endpoint: string, body: object, options: HttpGetOptions = {}): Promise<unknown> => {
+export const httpPost = async (base: string | undefined, endpoint: string, body: object, options: HttpGetOptions = {}): Promise<unknown> => {
   const headers: HeadersInit = {
     ...defaultHeaders,
     ...options.headers,
