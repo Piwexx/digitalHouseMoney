@@ -1,52 +1,64 @@
-import { UserData,GetTokenResponse,PostLoginBody,PostLoginResponse } from "@/types/login";
-import { httpPost,httpGet} from "./common/http";
-import {PostRegisterBody,PostRegisterResponse} from  '@/types/register'
+import { UserData, GetTokenResponse, PostLoginBody, PostLoginResponse } from "@/types/login";
+import { httpPost, httpGet } from "./common/http";
+import { PostRegisterBody, PostRegisterResponse } from '@/types/register'; // Corrected import path assuming types are in @/types
 
-const API_URL_PUBLIC = process.env.NEXT_PUBLIC_SITE_URL || ''
+const API_URL_PUBLIC = process.env.NEXT_PUBLIC_SITE_URL || '';
+
+// Placeholder for the actual response type of /api/login if different from PostLoginResponse
+interface AuthenticatedUserResponse {
+  // Define structure based on what /api/login returns, e.g.:
+  userId: string;
+  email: string;
+  // ... other relevant user session fields
+  // For now, let's assume it's a subset of PostLoginResponse or similar
+  token?: string;
+  user?: { id: number; username: string; email: string; };
+}
 
 export async function login(
-	body: PostLoginBody,
-	options = {}
+  body: PostLoginBody,
+  options = {}
 ): Promise<PostLoginResponse> {
-	return httpPost(undefined,"/login", body, {
-		headers: {
-			"Content-Type": "application/json",
-		},
-		...options,
-	}) as Promise<PostLoginResponse>
+  return httpPost(undefined, "/login", body, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+    ...options,
+  }) as Promise<PostLoginResponse>;
 }
 
 export async function getToken(
-	sessionID:string,
-	options = {}
+  sessionID: string,
+  options = {}
 ): Promise<GetTokenResponse> {
-	return httpGet(API_URL_PUBLIC,`/api/redis?key=${sessionID}`,{
-		headers: {
-			"Content-Type": "application/json",
-			"Authorization": `Bearer ${process.env.REDIS_API_KEY}`   
-		},
-		...options,
-	}) as Promise<GetTokenResponse>
+  return httpGet(API_URL_PUBLIC, `/api/redis?key=${sessionID}`, {
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${process.env.REDIS_API_KEY}`
+    },
+    ...options,
+  }) as Promise<GetTokenResponse>;
 }
 
-export async function getAuthenticated(userData: UserData): Promise<Response> {
-  return httpPost(API_URL_PUBLIC,'/api/login', userData) as Promise<Response>;
+// Changed return type from Promise<Response> to Promise<AuthenticatedUserResponse>
+// This assumes /api/login returns a JSON object with user session info
+export async function getAuthenticated(userData: UserData): Promise<AuthenticatedUserResponse> {
+  // The actual response type from httpPost will be unknown due to handleResponse.
+  // The 'as Promise<AuthenticatedUserResponse>' casts this.
+  // Ensure /api/login actually returns something compatible with AuthenticatedUserResponse.
+  return httpPost(API_URL_PUBLIC, '/api/login', userData) as Promise<AuthenticatedUserResponse>;
 }
 
 export async function postRegister(
-	body: PostRegisterBody,
-	options = {}
+  body: PostRegisterBody,
+  options = {}
 ): Promise<PostRegisterResponse> {
-	return httpPost(undefined,"/users", body, {
-		headers: {
-			"Content-Type": "application/json",
-		},
-		...options,
-	})
-		.then((data) => {
-			return data as PostRegisterResponse
-		})
-		.catch((error) => {
-			throw error;
-		});
+  // Removed redundant .then and .catch, httpPost will throw HttpError on failure
+  // and handleResponse already parses JSON.
+  return httpPost(undefined, "/users", body, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+    ...options,
+  }) as Promise<PostRegisterResponse>;
 }
